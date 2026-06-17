@@ -34,7 +34,7 @@ def choose_tool(question: str):
             "news",
             "current",
             "who is",
-            "what is",
+            #"what is",
             "when did",
             "where is"
         ]

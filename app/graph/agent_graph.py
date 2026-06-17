@@ -10,6 +10,7 @@ from app.tools.search import search_web
 from app.rag.rag_agent import ask_rag
 
 from app.graph.router_llm import choose_tool
+from app.graph.memory_router import memory_check
 
 
 # -------------------------
@@ -18,6 +19,13 @@ from app.graph.router_llm import choose_tool
 
 def router(state: AgentState):
 
+    memory_result = memory_check(
+        state["question"]
+    )
+
+    if memory_result:
+        return "memory"
+
     tool = choose_tool(
         state["question"]
     )
@@ -25,6 +33,23 @@ def router(state: AgentState):
     print("ROUTER:", tool)
 
     return tool
+
+
+# -------------------------
+# Memory Node
+# -------------------------
+
+def memory_node(
+    state: AgentState
+):
+
+    result = memory_check(
+        state["question"]
+    )
+
+    return {
+        "answer": result
+    }
 
 
 # -------------------------
@@ -53,6 +78,7 @@ def rag_node(
 ):
 
     result = ask_rag(
+        state["session_id"],
         state["question"]
     )
 
@@ -104,6 +130,11 @@ graph = StateGraph(
 )
 
 graph.add_node(
+    "memory",
+    memory_node
+)
+
+graph.add_node(
     "calculator",
     calculator_node
 )
@@ -132,6 +163,7 @@ graph.add_conditional_edges(
     START,
     router,
     {
+        "memory": "memory",
         "calculator": "calculator",
         "rag": "rag",
         "weather": "weather",
@@ -143,6 +175,11 @@ graph.add_conditional_edges(
 # -------------------------
 # End Edges
 # -------------------------
+
+graph.add_edge(
+    "memory",
+    END
+)
 
 graph.add_edge(
     "calculator",
